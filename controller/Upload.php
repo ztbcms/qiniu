@@ -65,6 +65,13 @@ class Upload extends BaseApi
         if (empty($sence)) {
             return self::makeJsonReturn(false, null, '参数异常:sence');
         }
+        $key = input('key');
+        $fname = input('fname');
+        $mimeType = input('mimeType');
+        $fsize = input('fsize');
+        if (empty($sence)) {
+            return self::makeJsonReturn(false, null, '参数异常:sence');
+        }
         $qiniuService = new QiniuService($sence);
         $config = $qiniuService->config();
         $accessKey = $config['access_key'];
@@ -82,10 +89,11 @@ class Upload extends BaseApi
         $isQiniuCallback = $auth->verifyCallback($contentType, $authorization, $url, $callbackBody);
         $upload_file = [
             'bucket' => $config['bucket'],
-            'key' => input('key'),
-            'file_name' => input('fname'),
-            'file_type' => input('mimeType'),
-            'file_size' => input('fsize'),
+            'key' => $key,
+            'file_name' => $fname,
+            'file_type' => $mimeType,
+            'file_size' => $fsize,
+            'file_url' => $config['domain'] . '/' . $key,
             'create_time' => time(),
         ];
         if ($isQiniuCallback) {

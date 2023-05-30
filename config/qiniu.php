@@ -11,6 +11,7 @@ return [
             'secret_key' => 'xxx',
             'bucket' => 'xxx',
             'upload' => [
+                'domain' => 'http://img.xfj.devonline.net',
                 // 允许的附件后缀【注：这里主要是用于前端判定】
                 'allow_suffix' => 'pdf,doc,docx,xls,xlsx,ppt,pptx',
                 'prefix_key' => 'd/',
