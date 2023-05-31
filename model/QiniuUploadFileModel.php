@@ -9,5 +9,5 @@ use think\Model;
 
 class QiniuUploadFileModel extends Model
 {
-    protected $table = 'qiniu_upload_file';
+    protected $name = 'qiniu_upload_file';
 }
