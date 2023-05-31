@@ -69,8 +69,8 @@ class Upload extends BaseApi
         $fname = input('fname');
         $mimeType = input('mimeType');
         $fsize = input('fsize');
-        if (empty($sence)) {
-            return self::makeJsonReturn(false, null, '参数异常:sence');
+        if (empty($key) || empty($fname) || empty($mimeType) || empty($fsize)) {
+            return self::makeJsonReturn(false, null, '参数异常');
         }
         $qiniuService = new QiniuService($sence);
         $config = $qiniuService->config();
