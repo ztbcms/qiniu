@@ -13,7 +13,7 @@ use think\Request;
 
 class Upload extends BaseApi
 {
-    protected $skillAuthActions = ['getUploadConfig'];
+    protected $skillAuthActions = ['getUploadConfig', 'callback'];
 
     /**
      * 上传配置
