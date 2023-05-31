@@ -88,6 +88,7 @@ class Upload extends BaseApi
         $url = api_url('/qiniu/upload/callback');
         $isQiniuCallback = $auth->verifyCallback($contentType, $authorization, $url, $callbackBody);
         $upload_file = [
+            'uuid' => generateUniqueId(),
             'bucket' => $config['bucket'],
             'key' => $key,
             'file_name' => $fname,
