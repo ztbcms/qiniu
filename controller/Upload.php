@@ -34,16 +34,7 @@ class Upload extends BaseApi
             'saveKey' => $key,
             'fsizeLimit' => $config['upload']['fsizeLimit'],
             'callbackUrl' => api_url('qiniu/upload/callback'),
-            'callbackBody' => json_encode([
-                'sence' => $sence,
-                'key' => "$(key)",
-                'etag' => "$(etag)",
-                'fname' => "$(fname)",
-                'fsize' => "$(fsize)",
-                'mimeType' => "$(mimeType)",
-                'ext' => "$(ext)",
-                'fprefix' => "$(fprefix)",
-            ]),
+            'callbackBody' => "sence={$sence}&key=$(key)&fname=$(fname)&fsize=$(fsize)&mimeType=$(mimeType)&etag=$(etag)"
         ];
         $upload_token = $qiniuService->getUploadToken($key, $expires, $policy);
         $ret = [
