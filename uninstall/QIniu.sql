@@ -1,0 +1,1 @@
+DROP TABLE `cms_qiniu_upload_file`;
