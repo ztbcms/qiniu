@@ -34,7 +34,7 @@ class Upload extends BaseApi
             'saveKey' => $key,
             'fsizeLimit' => $config['upload']['fsizeLimit'],
             'callbackUrl' => api_url('qiniu/upload/callback'),
-            'callbackBody' => "sence={$sence}&key=$(key)&fname=$(fname)&fsize=$(fsize)&mimeType=$(mimeType)&etag=$(etag)"
+            'callbackBody' => "sence={$sence}&key=$(key)&fname=$(fname)&fsize=$(fsize)&mimeType=$(mimeType)&etag=$(etag)&ext=$(ext)"
         ];
         $upload_token = $qiniuService->getUploadToken($key, $expires, $policy);
         $ret = [
@@ -60,6 +60,7 @@ class Upload extends BaseApi
         $fname = input('fname');
         $mimeType = input('mimeType');
         $fsize = input('fsize');
+        $file_ext = input('ext');
         if (empty($key) || empty($fname) || empty($mimeType) || empty($fsize)) {
             return self::makeJsonReturn(false, null, '参数异常');
         }
@@ -84,6 +85,7 @@ class Upload extends BaseApi
                 'key' => $key,
                 'file_name' => $fname,
                 'file_type' => $mimeType,
+                'file_ext' => $file_ext,
                 'file_size' => intval($fsize),
                 'file_url' => $config['upload']['domain'] . '/' . $key,
                 'create_time' => time(),
