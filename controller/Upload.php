@@ -60,7 +60,7 @@ class Upload extends BaseApi
         $fname = input('fname');
         $mimeType = input('mimeType');
         $fsize = input('fsize');
-        $file_ext = input('ext');
+        $file_ext = ltrim(input('ext'), '.');
         if (empty($key) || empty($fname) || empty($mimeType) || empty($fsize)) {
             return self::makeJsonReturn(false, null, '参数异常');
         }
