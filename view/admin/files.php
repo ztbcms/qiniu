@@ -33,6 +33,15 @@
             >
             </el-table-column>
             <el-table-column
+                    width="80"
+                    align="right"
+                    label="文件大小"
+            >
+                <template slot-scope="scope">
+                    {{ scope.row.file_size | byte2Kb }}KB
+                </template>
+            </el-table-column>
+            <el-table-column
                     align="center"
                     prop="uuid"
                     label="UUID"
@@ -126,6 +135,11 @@
             mounted: function () {
                 this.getList()
             },
+            filters: {
+                byte2Kb: function (value) {
+                    return Math.round(value / 1024)
+                }
+            },
             methods: {
                 search: function () {
                     this.currentPage = 1
@@ -160,7 +174,7 @@
                 changeFileStatus: function (file, file_status) {
                     var that = this
                     let alert_msg = '该操作会使七牛云上的资源设为启用状态，可以直接在公网访问，确定操作？'
-                    if(file_status === 1){
+                    if (file_status === 1) {
                         alert_msg = '该操作会使七牛云上的资源设为禁用状态，只能通过签发 Token 才能访问，确定操作？'
                     }
                     layer.confirm(alert_msg, {title: '提示'}, function (index) {
