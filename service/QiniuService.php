@@ -43,7 +43,11 @@ class QiniuService extends BaseService
         return $this;
     }
 
-
+    /**
+     * 获取七牛配置
+     * @return mixed
+     * @throws \Throwable
+     */
     function config()
     {
         if (!Config::has('qiniu')) {
@@ -53,15 +57,19 @@ class QiniuService extends BaseService
         return config('qiniu.sences')[$this->sence];
     }
 
+    /**
+     * @return Auth
+     */
     private function getAuth()
     {
-
+        $config = $this->config();
+        return new Auth($config['access_key'], $config['secret_key']);
     }
 
     function getUploadToken($key = null, $expires = 3600, $policy = null, $strictPolicy = true)
     {
         $config = $this->config();
-        $auth = new Auth($config['access_key'], $config['secret_key']);
+        $auth = $this->getAuth();
         return $auth->uploadToken($config['bucket'], $key, $expires, $policy, $strictPolicy);
     }
 
@@ -72,8 +80,7 @@ class QiniuService extends BaseService
      */
     function doDeleteFile(QiniuUploadFileModel $fileModel)
     {
-        $config = $this->config();
-        $auth = new Auth($config['access_key'], $config['secret_key']);
+        $auth = $this->getAuth();
         $bucketManager = new \Qiniu\Storage\BucketManager($auth);
         list($data, $err) = $bucketManager->delete($fileModel->bucket, $fileModel->key);
         if ($err) {
@@ -119,8 +126,7 @@ class QiniuService extends BaseService
      */
     function doSetFileStatus(QiniuUploadFileModel $fileModel, $status)
     {
-        $config = $this->config();
-        $auth = new Auth($config['access_key'], $config['secret_key']);
+        $auth = $this->getAuth();
         $bucketManager = new \Qiniu\Storage\BucketManager($auth);
         list($data, $err) = $bucketManager->changeStatus($fileModel->bucket, $fileModel->key, intval($status));
         if ($err) {
