@@ -111,7 +111,7 @@
                     @current-change="currentPageChange"
                     layout=" prev, pager, next, total"
                     :total="total_items"
-                    :page-count="total_pages">
+                    :page-size="page_size">
             </el-pagination>
         </div>
     </el-card>
@@ -159,7 +159,7 @@
                     this.httpGet("{:api_url('/qiniu/admin/files')}", data, function (res) {
                         var data = res.data
                         _this.lists = data.items
-                        _this.total_pages = data.total_pages
+                        _this.page_size = data.limit
                         _this.total_items = data.total_items
                     })
                 },
