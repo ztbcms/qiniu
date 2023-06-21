@@ -6,8 +6,11 @@
 namespace app\qiniu\service;
 
 use app\common\service\BaseService;
+use app\qiniu\libs\StringUtils;
+use app\qiniu\model\QiniuFetchFileModel;
 use app\qiniu\model\QiniuUploadFileModel;
 use Qiniu\Auth;
+use Qiniu\Storage\BucketManager;
 use think\Exception;
 use think\facade\Config;
 
@@ -44,7 +47,7 @@ class QiniuService extends BaseService
     }
 
     /**
-     * 获取七牛配置
+     * 获取全部配置
      * @return mixed
      * @throws \Throwable
      */
@@ -55,6 +58,17 @@ class QiniuService extends BaseService
         }
         throw_if(empty(config('qiniu.sences')[$this->sence]), new Exception('Not Found sence:' . $this->sence));
         return config('qiniu.sences')[$this->sence];
+    }
+
+    /**
+     * 获取配置值
+     * @param $key
+     * @return mixed
+     * @throws \Throwable
+     */
+    function getConfig($key)
+    {
+        return $this->config()[$key];
     }
 
     /**
@@ -159,5 +173,123 @@ class QiniuService extends BaseService
             'file_status' => $status
         ]);
         return self::createReturn(true, null, '操作完成');
+    }
+
+    /**
+     * 发起抓取
+     * @param $key
+     * @param $url
+     * @return array
+     * @throws \Throwable
+     */
+    function doFetchFile($bucket, $key, $url)
+    {
+        $auth = $this->getAuth();
+        $bucketManager = new BucketManager($auth);
+        // 异步抓取
+        list($ret, $err) = $bucketManager->asynchFetch($url, $bucket, null, $key);
+        if ($err) {
+            return self::createReturn(false, null, $err->message());
+        }
+        return self::createReturn(true, $ret, '已提交抓取任务');
+    }
+
+    /**
+     * 创建抓取
+     * @param $url
+     * @param $key
+     * @param $file_name
+     * @return array
+     * @throws \Throwable
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\DbException
+     * @throws \think\db\exception\ModelNotFoundException
+     */
+    function createFetch($url, $key = '', $file_name = '')
+    {
+        // Check params
+        if (empty($file_name)) {
+            $file_name = StringUtils::getFileNameByURL($url);
+        }
+        $file_ext = StringUtils::getFileExtByFileName($file_name);
+        if (empty($key)) {
+            $key = $this->getConfig('fetch')['prefix_key'] . strtolower(md5($url)) . '.' . $file_ext;
+
+        }
+        $uuid = generateUniqueId();
+        $bucket = $this->getConfig('bucket');
+        $exist = QiniuFetchFileModel::where([
+            'bucket' => $bucket,
+            'key' => $key,
+        ])->field('id,bucket,key')->find();
+        if ($exist) {
+            return self::createReturn(true, ['id' => $exist->id]);
+        }
+        // do fetch
+        $res = $this->doFetchFile($bucket, $key, $url);
+        if (!$res['status']) {
+            return $res;
+        }
+        $file = [
+            'bucket' => $this->getConfig('bucket'),
+            'key' => $key,
+            'file_name' => $file_name,
+            'file_ext' => $file_ext,
+            'file_url' => $this->getConfig('fetch')['domain'] . '/' . $key,
+            'fetch_status' => 0,
+            'fetch_url' => $url,
+            'uuid' => $uuid,
+        ];
+        $fileModel = new QiniuFetchFileModel();
+        $res = $fileModel->data($file)->save();
+        throw_if(!$res, new Exception('保存 QiniuFetchFileModel 失败'));
+        return self::createReturn(true, ['id' => $fileModel->id]);
+    }
+
+    /**
+     * 获取文件信息
+     * @param $bucket
+     * @param $key
+     * @return array
+     */
+    function doStatFile($bucket, $key)
+    {
+        $auth = $this->getAuth();
+        $bucketManager = new BucketManager($auth);
+        list($ret, $err) = $bucketManager->stat($bucket, $key);
+        if ($err) {
+            // 资源不存在
+            return self::createReturn(false, null, $err->message());
+        }
+        // $ret={"fsize":111,"hash":"xxx","mimeType":"application/octet-stream","putTime":13603956734587420,"md5":"xxxx"}
+        return self::createReturn(true, $ret, '获取成功');
+    }
+
+    /**
+     * 检测抓取状态
+     * @param QiniuFetchFileModel $fileModel
+     * @return array
+     */
+    function checkFetch(QiniuFetchFileModel $fileModel)
+    {
+        // 检测本身是否已同步
+        if ($fileModel->fetch_status != QiniuFetchFileModel::FETCH_STATUS_DOING) {
+            return self::createReturn(true, ['status' => $fileModel->fetch_status], '操作完成');
+        }
+        // do stat file
+        $res = $this->doStatFile($fileModel->bucket, $fileModel->key);
+        if ($res['status']) {
+            // 有文件信息，说明已抓取成功
+            $file_metadata = $res['data'];
+            $fileModel->save([
+                'fetch_status' => QiniuFetchFileModel::FETCH_STATUS_DONE,
+                'file_type' => $file_metadata['mimeType'],
+                'file_size' => $file_metadata['fsize'],
+            ]);
+            return self::createReturn(true, ['status' => QiniuFetchFileModel::FETCH_STATUS_DONE], '抓取成功');
+        } else {
+            // 未有文件信息，可能1、抓取失败,资源链接异常, 2、仍在抓取中,网路延迟
+            return self::createReturn(true, ['status' => QiniuFetchFileModel::FETCH_STATUS_DOING], '抓取中');
+        }
     }
 }
