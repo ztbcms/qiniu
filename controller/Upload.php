@@ -22,6 +22,9 @@ class Upload extends BaseApi
     function getUploadConfig(Request $request)
     {
         $file_name = urldecode(input('file_name'));
+        if (empty($file_name)) {
+            return self::makeJsonReturn(false, null, '参数异常');
+        }
         $_arr = explode('.', $file_name);
         $file_ext = $_arr[count($_arr) - 1];
         $sence = input('sence', 'default');
@@ -32,7 +35,7 @@ class Upload extends BaseApi
         $policy = [
             'forceSaveKey' => true,
             'saveKey' => $key,
-            'fsizeLimit' => $config['upload']['fsizeLimit'],
+            'fsizeLimit' => $config['upload']['size_limit'],
             'callbackUrl' => api_url('qiniu/upload/callback'),
             'callbackBody' => "sence={$sence}&key=$(key)&fname=$(fname)&fsize=$(fsize)&mimeType=$(mimeType)&etag=$(etag)&ext=$(ext)"
         ];
@@ -40,8 +43,8 @@ class Upload extends BaseApi
         $ret = [
             'key' => $key,
             'upload_token' => $upload_token,
-            'file_size_max_byte' => $config['upload']['fsizeLimit'],
-            'file_size_max_mb' => intval($config['upload']['fsizeLimit'] / 1024 / 1024),
+            'file_size_max_byte' => $config['upload']['size_limit'],
+            'file_size_max_mb' => intval($config['upload']['size_limit'] / 1024 / 1024),
             'allow_suffix' => $config['upload']['allow_suffix'],
         ];
         return self::makeJsonReturn(true, $ret);
