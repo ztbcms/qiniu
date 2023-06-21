@@ -10,6 +10,9 @@ use app\common\service\jwt\JwtService;
 use app\qiniu\model\QiniuFetchFileModel;
 use app\qiniu\service\QiniuService;
 
+/**
+ * 拉取文件
+ */
 class Fetch extends BaseApi
 {
     /**

@@ -80,6 +80,15 @@ class QiniuService extends BaseService
         return new Auth($config['access_key'], $config['secret_key']);
     }
 
+    /**
+     * 获取上传凭证
+     * @param $key
+     * @param $expires
+     * @param $policy
+     * @param $strictPolicy
+     * @return string
+     * @throws \Throwable
+     */
     function getUploadToken($key = null, $expires = 3600, $policy = null, $strictPolicy = true)
     {
         $config = $this->config();
@@ -92,11 +101,11 @@ class QiniuService extends BaseService
      * @param QiniuUploadFileModel $fileModel
      * @return array
      */
-    function doDeleteFile(QiniuUploadFileModel $fileModel)
+    function doDeleteFile($bucket, $key)
     {
         $auth = $this->getAuth();
         $bucketManager = new \Qiniu\Storage\BucketManager($auth);
-        list($data, $err) = $bucketManager->delete($fileModel->bucket, $fileModel->key);
+        list($data, $err) = $bucketManager->delete($bucket, $key);
         if ($err) {
             // 资源找不到，说明已删除了
             if (in_array($err->code(), self::STATUS_CODE_NO_EXIST)) {
@@ -121,7 +130,7 @@ class QiniuService extends BaseService
         if (!$fileModel) {
             return self::createReturn(false, null, '记录不存在');
         }
-        $res = $this->doDeleteFile($fileModel);
+        $res = $this->doDeleteFile($fileModel->bucket, $fileModel->key);
         if (!$res['status']) {
             return $res;
         }
@@ -138,11 +147,11 @@ class QiniuService extends BaseService
      * @param $status int 值为数字，0表示启用，1表示禁用
      * @return array
      */
-    function doSetFileStatus(QiniuUploadFileModel $fileModel, $status)
+    function doSetFileStatus($bucket, $key, $status)
     {
         $auth = $this->getAuth();
         $bucketManager = new \Qiniu\Storage\BucketManager($auth);
-        list($data, $err) = $bucketManager->changeStatus($fileModel->bucket, $fileModel->key, intval($status));
+        list($data, $err) = $bucketManager->changeStatus($bucket, $key, intval($status));
         if ($err) {
             return self::createReturn(false, null, $err->message());
         }
@@ -165,7 +174,7 @@ class QiniuService extends BaseService
         if (!in_array($status, [0, 1])) {
             return self::createReturn(false, null, '参数异常：status');
         }
-        $res = $this->doSetFileStatus($fileModel, $status);
+        $res = $this->doSetFileStatus($fileModel->bucket, $fileModel->key, $status);
         if (!$res['status']) {
             return $res;
         }
@@ -236,7 +245,7 @@ class QiniuService extends BaseService
             'file_name' => $file_name,
             'file_ext' => $file_ext,
             'file_url' => $this->getConfig('fetch')['domain'] . '/' . $key,
-            'fetch_status' => 0,
+            'fetch_status' => QiniuFetchFileModel::FETCH_STATUS_DOING,
             'fetch_url' => $url,
             'uuid' => $uuid,
         ];
@@ -291,5 +300,53 @@ class QiniuService extends BaseService
             // 未有文件信息，可能1、抓取失败,资源链接异常, 2、仍在抓取中,网路延迟
             return self::createReturn(true, ['status' => QiniuFetchFileModel::FETCH_STATUS_DOING], '抓取中');
         }
+    }
+
+    /**
+     * 删除fetch文件记录和七牛云上资源
+     * @param $file_uuid
+     * @return array
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\DbException
+     * @throws \think\db\exception\ModelNotFoundException
+     */
+    function deleteFetchFile($file_uuid)
+    {
+        $fileModel = QiniuFetchFileModel::where('uuid', '=', $file_uuid)->find();
+        if (!$fileModel) {
+            return self::createReturn(false, null, '记录不存在');
+        }
+        $res = $this->doDeleteFile($fileModel->bucket, $fileModel->key);
+        if (!$res['status']) {
+            return $res;
+        }
+        $fileModel->delete();
+        return self::createReturn(true, null, '操作完成');
+    }
+
+    /**
+     * 设置fetch文件启用状态
+     * @param $file_uuid
+     * @param $is_block
+     * @return array
+     */
+    function setFetchFileStatus($file_uuid, $status)
+    {
+        $fileModel = QiniuFetchFileModel::where('uuid', '=', $file_uuid)->find();
+        if (!$fileModel) {
+            return self::createReturn(false, null, '找不到文件');
+        }
+        $status = intval($status);
+        if (!in_array($status, [0, 1])) {
+            return self::createReturn(false, null, '参数异常：status');
+        }
+        $res = $this->doSetFileStatus($fileModel->bucket, $fileModel->key, $status);
+        if (!$res['status']) {
+            return $res;
+        }
+        $fileModel->save([
+            'file_status' => $status
+        ]);
+        return self::createReturn(true, null, '操作完成');
     }
 }

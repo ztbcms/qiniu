@@ -85,6 +85,23 @@
             <el-table-column
                     min-width="80"
                     align="center"
+                    label="抓取状态">
+                <template slot-scope="scope">
+                    <template v-if="scope.row.fetch_status == 0">
+                        <span>抓取中</span>
+                        <el-button type="primary" size="mini" @click="queryFetchStatus(scope.row)">检测抓取状态</el-button>
+                    </template>
+                    <template v-if="scope.row.fetch_status == 1">
+                        <span>抓取成功</span>
+                    </template>
+                    <template v-if="scope.row.fetch_status == 2">
+                        <span>抓取失败</span>
+                    </template>
+                </template>
+            </el-table-column>
+            <el-table-column
+                    min-width="80"
+                    align="center"
                     prop="create_time"
                     label="创建时间">
                 </el-switch>
@@ -153,7 +170,7 @@
                     data['_action'] = 'getList'
                     data['sort_field'] = this.sort_field
                     data['sort_order'] = this.sort_order
-                    this.httpGet("{:api_url('/qiniu/admin/files')}", data, function (res) {
+                    this.httpGet("{:api_url('/qiniu/admin/fetch_files')}", data, function (res) {
                         var data = res.data
                         _this.lists = data.items
                         _this.page_size = data.limit
@@ -186,7 +203,7 @@
                         uuid: file.uuid,
                         file_status: file_status
                     }
-                    this.httpPost("{:api_url('/qiniu/admin/files')}", data, function (res) {
+                    this.httpPost("{:api_url('/qiniu/admin/fetch_files')}", data, function (res) {
                         layer.msg(res.msg)
                         if (res.status) {
                             that.getList()
@@ -206,7 +223,20 @@
                         _action: 'deleteFile',
                         uuid: file.uuid
                     }
-                    this.httpPost("{:api_url('/qiniu/admin/files')}", data, function (res) {
+                    this.httpPost("{:api_url('/qiniu/admin/fetch_files')}", data, function (res) {
+                        layer.msg(res.msg)
+                        if (res.status) {
+                            that.getList()
+                        }
+                    })
+                },
+                queryFetchStatus: function(file){
+                    var that = this
+                    var data = {
+                        _action: 'queryFetchStatus',
+                        uuid: file.uuid
+                    }
+                    this.httpPost("{:api_url('/qiniu/admin/fetch_files')}", data, function (res) {
                         layer.msg(res.msg)
                         if (res.status) {
                             that.getList()
