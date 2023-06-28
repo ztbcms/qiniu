@@ -43,4 +43,4 @@ CREATE TABLE `cms_qiniu_fetch_file`
     UNIQUE KEY `uuid` (`uuid`),
     KEY               `bucket` (`bucket`(191),`key`(191)),
     KEY               `create_time` (`create_time`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
