@@ -31,11 +31,12 @@ fetch_prefix_key=fetch/
   "status": true,
   "code": 200,
   "data": {
-    "key": "d\/202306\/$(etag)$(ext)",
-    "upload_token": "=",
-    "file_size_max_byte": 52428800,
-    "file_size_max_mb": 50,
-    "allow_suffix": "pdf,doc,docx,xls,xlsx,ppt,pptx"
+    "key": "d/202306/29172251-$(etag)$(ext)",
+    "upload_token": "xxxx",
+    "file_size_max_byte": 11534336,
+    "file_size_max_mb": 11,
+    "allow_suffix": "pdf,doc,docx,xls,xlsx,ppt,pptx",
+    "upload_url": "https://up-z2.qiniup.com"
   },
   "msg": "",
   "url": ""
