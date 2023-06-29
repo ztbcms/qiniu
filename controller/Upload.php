@@ -13,7 +13,7 @@ use think\Request;
 
 class Upload extends BaseApi
 {
-    protected $skillAuthActions = ['getUploadConfig', 'callback'];
+    protected $skillAuthActions = ['getUploadConfig', 'callback', 'getUploadConfigV2', 'callbackV2'];
 
     /**
      * 上传配置
@@ -51,7 +51,9 @@ class Upload extends BaseApi
     }
 
     /**
-     * 上传回调
+     * 上传完成回调
+     * @see https://developer.qiniu.com/kodo/1206/put-policy
+     * @see https://developer.qiniu.com/kodo/1654/response-body
      */
     function callback()
     {
@@ -109,5 +111,34 @@ class Upload extends BaseApi
         } else {
             return self::makeJsonReturn(false, null, '非法请求');
         }
+    }
+
+    /**
+     * 上传配置V2
+     * @return \think\response\Json
+     */
+    function getUploadConfigV2(Request $request)
+    {
+        $sence = input('sence', 'default');
+        $qiniuService = new QiniuService($sence);
+        $config = $qiniuService->config();
+        $key = $config['upload']['prefix_key'] . date('Ym') . '/$(etag).$(ext)';
+        $expires = 360;// 有效时间，单位：秒
+        $policy = [
+            'forceSaveKey' => true,
+            'saveKey' => $key,
+            'fsizeLimit' => $config['upload']['size_limit'],
+            'callbackUrl' => api_url('qiniu/upload/callback'),
+            'callbackBody' => "sence={$sence}&key=$(key)&fname=$(fname)&fsize=$(fsize)&mimeType=$(mimeType)&etag=$(etag)&ext=$(ext)"
+        ];
+        $upload_token = $qiniuService->getUploadToken($key, $expires, $policy);
+        $ret = [
+            'key' => $key,
+            'upload_token' => $upload_token,
+            'file_size_max_byte' => $config['upload']['size_limit'],
+            'file_size_max_mb' => intval($config['upload']['size_limit'] / 1024 / 1024),
+            'allow_suffix' => $config['upload']['allow_suffix'],
+        ];
+        return self::makeJsonReturn(true, $ret);
     }
 }
