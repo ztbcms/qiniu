@@ -17,8 +17,8 @@ class Upload extends BaseApi
 
     /**
      * 上传配置
-     * @deprecated 建议采用 getUploadConfigV2()
      * @return \think\response\Json
+     * @deprecated 建议采用 getUploadConfigV2()
      */
     function getUploadConfig(Request $request)
     {
@@ -69,6 +69,11 @@ class Upload extends BaseApi
         $file_ext = ltrim(input('ext'), '.');
         if (empty($key) || empty($fname) || empty($mimeType) || empty($fsize)) {
             return self::makeJsonReturn(false, null, '参数异常');
+        }
+        // 如有自定义文件名,则优先使用自定义
+        $file_name = urldecode(input('custom_file_name'));
+        if (!empty($file_name)) {
+            $fname = $file_name;
         }
         $qiniuService = new QiniuService($sence);
         $config = $qiniuService->config();
@@ -123,14 +128,14 @@ class Upload extends BaseApi
         $sence = input('sence', 'default');
         $qiniuService = new QiniuService($sence);
         $config = $qiniuService->config();
-        $key = $config['upload']['prefix_key'] . date('Ym') . '/'.date('dHis').'-$(etag)$(ext)';
+        $key = $config['upload']['prefix_key'] . date('Ym') . '/' . date('dHis') . '-$(etag)$(ext)';
         $expires = 360;// 有效时间，单位：秒
         $policy = [
             'forceSaveKey' => true,
             'saveKey' => $key,
             'fsizeLimit' => $config['upload']['size_limit'],
             'callbackUrl' => api_url('qiniu/upload/callback'),
-            'callbackBody' => "sence={$sence}&key=$(key)&fname=$(fname)&fsize=$(fsize)&mimeType=$(mimeType)&etag=$(etag)&ext=$(ext)"
+            'callbackBody' => "sence={$sence}&key=$(key)&fname=$(fname)&custom_file_name=$(x:custom_file_name)&fsize=$(fsize)&mimeType=$(mimeType)&etag=$(etag)&ext=$(ext)"
         ];
         $upload_token = $qiniuService->getUploadToken($key, $expires, $policy);
         $ret = [
