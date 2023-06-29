@@ -123,7 +123,7 @@ class Upload extends BaseApi
         $sence = input('sence', 'default');
         $qiniuService = new QiniuService($sence);
         $config = $qiniuService->config();
-        $key = $config['upload']['prefix_key'] . date('Ym') . '/'.date('dhis').'-$(etag)$(ext)';
+        $key = $config['upload']['prefix_key'] . date('Ym') . '/'.date('dHis').'-$(etag)$(ext)';
         $expires = 360;// 有效时间，单位：秒
         $policy = [
             'forceSaveKey' => true,
