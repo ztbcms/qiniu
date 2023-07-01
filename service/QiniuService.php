@@ -221,11 +221,10 @@ class QiniuService extends BaseService
             $file_name = StringUtils::getFileNameByURL($url);
         }
         $file_ext = StringUtils::getFileExtByFileName($file_name);
-        if (empty($key)) {
-            $key = $this->getConfig('fetch')['prefix_key'] . strtolower(md5($url)) . '.' . $file_ext;
-
-        }
         $uuid = generateUniqueId();
+        if (empty($key)) {
+            $key = $this->getConfig('fetch')['prefix_key'] . date('Ym') . '/' . date('dHis') . '-' . $uuid . '.' . $file_ext;
+        }
         $bucket = $this->getConfig('bucket');
         $exist = QiniuFetchFileModel::where([
             'bucket' => $bucket,
@@ -283,7 +282,7 @@ class QiniuService extends BaseService
     {
         // 检测本身是否已同步
         if ($fileModel->fetch_status != QiniuFetchFileModel::FETCH_STATUS_DOING) {
-            return self::createReturn(true, ['status' => $fileModel->fetch_status], '操作完成');
+            return self::createReturn(true, ['status' => $fileModel->fetch_status, 'file' => $fileModel], '操作完成');
         }
         // do stat file
         $res = $this->doStatFile($fileModel->bucket, $fileModel->key);
@@ -295,7 +294,7 @@ class QiniuService extends BaseService
                 'file_type' => $file_metadata['mimeType'],
                 'file_size' => $file_metadata['fsize'],
             ]);
-            return self::createReturn(true, ['status' => QiniuFetchFileModel::FETCH_STATUS_DONE], '抓取成功');
+            return self::createReturn(true, ['status' => QiniuFetchFileModel::FETCH_STATUS_DONE, 'file' => $fileModel], '抓取成功');
         } else {
             // 未有文件信息，可能1、抓取失败,资源链接异常, 2、仍在抓取中,网路延迟
             return self::createReturn(true, ['status' => QiniuFetchFileModel::FETCH_STATUS_DOING], '抓取中');
