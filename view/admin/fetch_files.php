@@ -38,7 +38,7 @@
                     label="文件大小"
             >
                 <template slot-scope="scope">
-                    {{ scope.row.file_size | byte2Kb }}KB
+                    {{ autoFormatBytes(scope.row.file_size) }}
                 </template>
             </el-table-column>
             <el-table-column
@@ -149,11 +149,6 @@
             mounted: function () {
                 this.getList()
             },
-            filters: {
-                byte2Kb: function (value) {
-                    return Math.round(value / 1024)
-                }
-            },
             methods: {
                 search: function () {
                     this.currentPage = 1
@@ -242,7 +237,16 @@
                             that.getList()
                         }
                     })
-                }
+                },
+                autoFormatBytes: function (val) {
+                    if (val < 1024) {
+                        return val + 'B'
+                    } else if (val < 1024 * 1024) {
+                        return Math.ceil(val / 1024) + 'KB'
+                    } else {
+                        return Math.ceil(val / 1024 / 1024) + 'MB'
+                    }
+                },
             }
         })
     })
