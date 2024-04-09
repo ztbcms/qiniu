@@ -24,8 +24,12 @@ class StringUtils
      * @param $file_name
      * @return mixed|string
      */
-    static function getFileExtByFileName($file_name){
+    static function getFileExtByFileName($file_name)
+    {
         $_arr = explode('.', $file_name);
-        return $_arr[count($_arr) - 1];
+        if (count($_arr) > 1) {
+            return $_arr[count($_arr) - 1];
+        }
+        return '';
     }
 }
