@@ -19,4 +19,6 @@ class QiniuUploadFileModel extends Model
      * 文件状态:禁用
      */
     const FILE_STATUS_DISABLE = 1;
+
+    protected $autoWriteTimestamp = true;
 }

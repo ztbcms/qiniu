@@ -15,4 +15,6 @@ class QiniuFetchFileModel extends Model
     const FETCH_STATUS_DOING = 0;
     const FETCH_STATUS_DONE = 1;
     const FETCH_STATUS_FAILD = 2;
+
+    protected $autoWriteTimestamp = true;
 }
