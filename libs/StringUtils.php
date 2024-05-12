@@ -32,4 +32,13 @@ class StringUtils
         }
         return '';
     }
+
+    /**
+     * 通过URL获取资源的文件后缀
+     * @param $url
+     * @return mixed|string
+     */
+    static function getFileExtByURL($url){
+        return self::getFileExtByFileName(self::getFileNameByURL($url));
+    }
 }
