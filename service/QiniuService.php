@@ -221,6 +221,12 @@ class QiniuService extends BaseService
             $file_name = StringUtils::getFileNameByURL($url);
         }
         $file_ext = StringUtils::getFileExtByFileName($file_name);
+        if (empty($file_ext)) {
+            $file_ext = StringUtils::getFileExtByURL($url);
+        }
+        if (empty($file_ext)) {
+            return self::createReturn(false, null, '无法获取文件后缀');
+        }
         $uuid = generateUniqueId();
         if (empty($key)) {
             $key = $this->getConfig('fetch')['prefix_key'] . date('Ym') . '/' . date('dHis') . '-' . $uuid . '.' . $file_ext;
