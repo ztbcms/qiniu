@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Author: Jayin Taung <tonjayin@gmail.com>
  */
@@ -176,7 +177,10 @@ class QiniuService extends BaseService
         }
         $res = $this->doSetFileStatus($fileModel->bucket, $fileModel->key, $status);
         if (!$res['status']) {
-            return $res;
+            // 已禁用、已启用则忽略判定
+            if ($res['msg'] !== 'already enabled' && $res['msg'] !== 'already disabled') {
+                return $res;
+            }
         }
         $fileModel->save([
             'file_status' => $status
