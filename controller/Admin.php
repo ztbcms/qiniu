@@ -23,6 +23,7 @@ class Admin extends AdminController
             $limit = input('limit', 15);
             $datetime = input('datetime', '');
             $file_name = input('file_name', '');
+            $file_status = input('file_status', '');
             $sort_field = input('sort_field', '');
             $sort_order = input('sort_order', '');
             $where = [];
@@ -31,12 +32,15 @@ class Admin extends AdminController
                 $_end_time = strtotime($datetime[1] . '23:59:59');
                 $where[] = ['create_time', 'between', [$_start_time, $_end_time]];
             }
+            if ($file_name) {
+                $where [] = ['file_name', 'like', '%' . $file_name . '%'];
+            }
+            if ($file_status !== 'all') {
+                $where [] = ['file_status', '=', $file_status];
+            }
             $order = 'id desc';
             if ($sort_field) {
                 $order = $sort_field . ' ' . $sort_order . ' ' . $order;
-            }
-            if ($file_name) {
-                $where [] = ['file_name', 'like', '%' . $file_name . '%'];
             }
             $lists = QiniuUploadFileModel::where($where)->order($order)->page($page)->limit($limit)->select()->toArray();
             $total = QiniuUploadFileModel::where($where)->count();

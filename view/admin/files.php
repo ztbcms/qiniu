@@ -20,6 +20,11 @@
                 </el-form-item>
             </el-form>
         </div>
+        <el-tabs v-model="searchForm.file_status" @tab-click="handleClickFileStatus">
+            <el-tab-pane label="全部" name="all"></el-tab-pane>
+            <el-tab-pane label="启用" name="0"></el-tab-pane>
+            <el-tab-pane label="禁用" name="1"></el-tab-pane>
+        </el-tabs>
         <el-table
                 :data="lists"
                 style="width: 100%"
@@ -107,6 +112,7 @@
                     background
                     @current-change="currentPageChange"
                     layout=" prev, pager, next, total"
+                    :current-page="currentPage"
                     :total="total_items"
                     :page-size="page_size">
             </el-pagination>
@@ -127,6 +133,7 @@
                 searchForm: {
                     datetime: ["{:date('Y-m-d')}", "{:date('Y-m-d')}"],
                     file_name: '',
+                    file_status: 'all',
                 }
             },
             mounted: function () {
@@ -216,6 +223,10 @@
                     } else {
                         return Math.ceil(val / 1024 / 1024) + 'MB'
                     }
+                },
+                // 文件状态 tab 点击
+                handleClickFileStatus: function (tab) {
+                    this.search()
                 },
             }
         })
