@@ -96,7 +96,7 @@ class Upload extends BaseApi
                 'key' => $key,
                 'file_name' => $fname,
                 'file_type' => $mimeType,
-                'file_ext' => $file_ext,
+                'file_ext' => strtolower($file_ext),
                 'file_size' => intval($fsize),
                 'file_url' => $config['upload']['domain'] . '/' . $key,
                 'create_time' => time(),
