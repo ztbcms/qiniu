@@ -12,6 +12,9 @@ use app\qiniu\model\QiniuFetchFileModel;
 use app\qiniu\model\QiniuUploadFileModel;
 use Qiniu\Auth;
 use Qiniu\Storage\BucketManager;
+use think\db\exception\DataNotFoundException;
+use think\db\exception\DbException;
+use think\db\exception\ModelNotFoundException;
 use think\Exception;
 use think\facade\Config;
 
@@ -210,23 +213,27 @@ class QiniuService extends BaseService
     /**
      * 创建抓取
      * @param $url
-     * @param $key
-     * @param $file_name
+     * @param string $key
+     * @param string $file_name
+     * @param string $file_ext
      * @return array
      * @throws \Throwable
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
      */
-    function createFetch($url, $key = '', $file_name = '')
+    function createFetch($url, $key = '', $file_name = '', $file_ext = '')
     {
         // Check params
         if (empty($file_name)) {
             $file_name = StringUtils::getFileNameByURL($url);
         }
-        $file_ext = StringUtils::getFileExtByFileName($file_name);
+        // file ext
         if (empty($file_ext)) {
             $file_ext = StringUtils::getFileExtByURL($url);
+        }
+        if (empty($file_ext)) {
+            $file_ext = StringUtils::getFileExtByFileName($file_name);
         }
         if (empty($file_ext)) {
             return self::createReturn(false, null, '无法获取文件后缀');
