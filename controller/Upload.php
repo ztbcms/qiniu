@@ -67,6 +67,7 @@ class Upload extends BaseApi
         $mimeType = input('mimeType');
         $fsize = input('fsize');
         $file_ext = ltrim(input('ext'), '.');
+        $uid = input('uid', '');
         if (empty($key) || empty($fname) || empty($mimeType) || empty($fsize)) {
             return self::makeJsonReturn(false, null, '参数异常');
         }
@@ -100,6 +101,7 @@ class Upload extends BaseApi
                 'file_size' => intval($fsize),
                 'file_url' => $config['upload']['domain'] . '/' . $key,
                 'create_time' => time(),
+                'uid' => $uid,
             ];
             // 记录上传信息
             $exist = QiniuUploadFileModel::where([
