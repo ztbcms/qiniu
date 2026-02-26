@@ -18,6 +18,29 @@
                 <el-form-item>
                     <el-button type="primary" @click="search">查询</el-button>
                 </el-form-item>
+                <el-form-item>
+                    <el-button
+                            type="danger"
+                            :loading="batchLoading"
+                            :disabled="batchLoading || multipleSelection.length === 0"
+                            @click="batchChangeFileStatus(1)">
+                        批量禁用
+                    </el-button>
+                    <el-button
+                            type="primary"
+                            :loading="batchLoading"
+                            :disabled="batchLoading || multipleSelection.length === 0"
+                            @click="batchChangeFileStatus(0)">
+                        批量启用
+                    </el-button>
+                    <el-button
+                            type="warning"
+                            :loading="batchLoading"
+                            :disabled="batchLoading || multipleSelection.length === 0"
+                            @click="batchDeleteFiles">
+                        批量删除
+                    </el-button>
+                </el-form-item>
             </el-form>
         </div>
         <el-tabs v-model="searchForm.file_status" @tab-click="handleClickFileStatus">
@@ -26,10 +49,16 @@
             <el-tab-pane label="禁用" name="1"></el-tab-pane>
         </el-tabs>
         <el-table
+                ref="filesTable"
                 :data="lists"
                 style="width: 100%"
                 @sort-change="onSortChange"
+                @selection-change="handleSelectionChange"
         >
+            <el-table-column
+                    type="selection"
+                    width="55">
+            </el-table-column>
             <el-table-column
                     min-width="180"
                     align="left"
@@ -130,6 +159,8 @@
                 pageCount: 1,
                 sort_field: '',// 排序字段
                 sort_order: '',// 升序降序
+                multipleSelection: [],
+                batchLoading: false,
                 searchForm: {
                     datetime: ["{:date('Y-m-d')}", "{:date('Y-m-d')}"],
                     file_name: '',
@@ -160,7 +191,16 @@
                         _this.lists = data.items
                         _this.page_size = data.limit
                         _this.total_items = data.total_items
+                        _this.multipleSelection = []
+                        _this.$nextTick(function () {
+                            if (_this.$refs.filesTable) {
+                                _this.$refs.filesTable.clearSelection()
+                            }
+                        })
                     })
+                },
+                handleSelectionChange: function (rows) {
+                    this.multipleSelection = rows
                 },
                 onSortChange: function (event) {
                     this.sort_field = event.prop
@@ -214,6 +254,163 @@
                             that.getList()
                         }
                     })
+                },
+                batchChangeFileStatus: function (file_status) {
+                    if (!this.multipleSelection.length) {
+                        layer.msg('请先勾选文件')
+                        return
+                    }
+                    var that = this
+                    var rows = this.multipleSelection.slice()
+                    var alert_msg = '该操作会使所选七牛云资源设为启用状态，可以直接在公网访问，确定操作？'
+                    if (file_status === 1) {
+                        alert_msg = '该操作会使所选七牛云资源设为禁用状态，只能通过签发 Token 才能访问，确定操作？'
+                    }
+                    layer.confirm(alert_msg, {title: '提示'}, function (index) {
+                        that.runBatchAction(rows, 'changeFileStatus', file_status)
+                        layer.close(index);
+                    });
+                },
+                batchDeleteFiles: function () {
+                    if (!this.multipleSelection.length) {
+                        layer.msg('请先勾选文件')
+                        return
+                    }
+                    var that = this
+                    var rows = this.multipleSelection.slice()
+                    layer.confirm('该操作会删除所选七牛云资源且不可逆，确定进行删除？', {title: '提示'}, function (index) {
+                        that.runBatchAction(rows, 'deleteFile')
+                        layer.close(index);
+                    });
+                },
+                runBatchAction: function (rows, action, file_status) {
+                    if (this.batchLoading) {
+                        return
+                    }
+                    if (!rows || !rows.length) {
+                        layer.msg('请先勾选文件')
+                        return
+                    }
+                    var that = this
+                    var total = rows.length
+                    var successCount = 0
+                    var failFiles = []
+                    var index = 0
+                    var loadingStartTime = Date.now()
+                    var minLoadingMs = 800
+                    var loadingLayerIndex = layer.msg('正在批量处理中，请稍候...', {
+                        icon: 16,
+                        shade: 0.2,
+                        time: 0
+                    })
+                    this.batchLoading = true
+
+                    var finish = function () {
+                        that.batchLoading = false
+                        that.getList()
+                        var closeLoadingAndShowResult = function () {
+                            layer.close(loadingLayerIndex)
+                            that.showBatchResult(successCount, total, failFiles)
+                        }
+                        var elapsed = Date.now() - loadingStartTime
+                        if (elapsed < minLoadingMs) {
+                            setTimeout(closeLoadingAndShowResult, minLoadingMs - elapsed)
+                        } else {
+                            closeLoadingAndShowResult()
+                        }
+                    }
+
+                    var next = function () {
+                        if (index >= total) {
+                            finish()
+                            return
+                        }
+                        var file = rows[index]
+                        index += 1
+                        that.postFileAction(file, action, file_status).then(function (res) {
+                            if (res && res.status) {
+                                successCount += 1
+                            } else {
+                                failFiles.push(file.file_name || file.uuid)
+                            }
+                            next()
+                        }).catch(function () {
+                            failFiles.push(file.file_name || file.uuid)
+                            next()
+                        })
+                    }
+
+                    next()
+                },
+                postFileAction: function (file, action, file_status) {
+                    var data = {
+                        _action: action,
+                        uuid: file.uuid
+                    }
+                    if (action === 'changeFileStatus') {
+                        data.file_status = file_status
+                    }
+                    return new Promise(function (resolve, reject) {
+                        $.ajax({
+                            url: "{:api_url('/qiniu/admin/files')}",
+                            type: 'POST',
+                            data: data,
+                            dataType: 'json',
+                            success: function (res) {
+                                resolve(res)
+                            },
+                            error: function () {
+                                reject(new Error('request error'))
+                            }
+                        })
+                    })
+                },
+                showBatchResult: function (successCount, total, failFiles) {
+                    var failCount = failFiles.length
+                    var summaryHtml = ''
+                    summaryHtml += '<div style="display:flex;gap:12px;margin-bottom:12px;">'
+                    summaryHtml += '<div style="flex:1;background:#f0f9eb;border:1px solid #e1f3d8;border-radius:6px;padding:10px 12px;">'
+                    summaryHtml += '<div style="font-size:12px;color:#67c23a;">成功</div>'
+                    summaryHtml += '<div style="font-size:20px;font-weight:600;color:#67c23a;line-height:1.2;">' + successCount + ' / ' + total + '</div>'
+                    summaryHtml += '</div>'
+                    summaryHtml += '<div style="flex:1;background:#fef0f0;border:1px solid #fde2e2;border-radius:6px;padding:10px 12px;">'
+                    summaryHtml += '<div style="font-size:12px;color:#f56c6c;">失败</div>'
+                    summaryHtml += '<div style="font-size:20px;font-weight:600;color:#f56c6c;line-height:1.2;">' + failCount + '</div>'
+                    summaryHtml += '</div>'
+                    summaryHtml += '</div>'
+
+                    var failListHtml = ''
+                    if (failCount > 0) {
+                        failListHtml += '<div style="font-size:14px;font-weight:600;color:#303133;margin-bottom:8px;">失败文件(' + failCount + ' 个)</div>'
+                        failListHtml += '<div style="max-height:260px;overflow:auto;border:1px solid #ebeef5;border-radius:6px;padding:8px 12px;background:#fff;">'
+                        failListHtml += '<ol style="margin:0;padding-left:18px;color:#606266;line-height:1.7;">'
+                        for (var i = 0; i < failFiles.length; i++) {
+                            failListHtml += '<li style="word-break:break-all;">' + this.escapeHtml(failFiles[i]) + '</li>'
+                        }
+                        failListHtml += '</ol>'
+                        failListHtml += '</div>'
+                    } else {
+                        failListHtml = '<div style="padding:14px;border:1px solid #e1f3d8;border-radius:6px;background:#f0f9eb;color:#67c23a;">全部处理成功，没有失败文件。</div>'
+                    }
+
+                    layer.open({
+                        type: 1,
+                        title: '操作结果',
+                        area: ['620px', '520px'],
+                        shadeClose: false,
+                        content: '<div style="padding:16px 18px;background:#fafafa;">' + summaryHtml + failListHtml + '</div>'
+                    })
+                },
+                escapeHtml: function (text) {
+                    if (text === undefined || text === null) {
+                        return ''
+                    }
+                    return String(text)
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;')
+                        .replace(/"/g, '&quot;')
+                        .replace(/'/g, '&#39;')
                 },
                 autoFormatBytes: function (val) {
                     if (val < 1024) {
