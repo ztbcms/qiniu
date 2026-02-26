@@ -14,8 +14,6 @@ CREATE TABLE `cms_qiniu_upload_file`
     `download_amount` int(11) NOT NULL DEFAULT '0' COMMENT '下载次数',
     `view_amount`     int(11) NOT NULL DEFAULT '0' COMMENT '浏览次数',
     `file_status`     tinyint(1) NOT NULL DEFAULT '0' COMMENT '文件状态 0正常，启用 1禁用',
-    `fetch_status`    tinyint(1) NOT NULL DEFAULT '0' COMMENT '拉取状态0拉取中，1拉取完成2拉取失败',
-    `fetch_url`       text COMMENT '抓取的url',
     PRIMARY KEY (`id`),
     UNIQUE KEY `uuid` (`uuid`),
     KEY               `bucket` (`bucket`(191),`key`(191)),
