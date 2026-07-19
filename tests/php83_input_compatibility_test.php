@@ -1,5 +1,6 @@
 <?php
 
+use app\qiniu\controller\Admin;
 use app\qiniu\controller\Fetch;
 use app\qiniu\controller\Upload;
 use think\App;
@@ -9,6 +10,13 @@ require dirname(__DIR__, 3) . '/vendor/autoload.php';
 
 $app = new App();
 $app->initialize();
+
+$adminController = new Admin($app);
+assertQiniuPagination($adminController, '2', '20', [2, 20], '数字字符串分页参数处理错误');
+assertQiniuPagination($adminController, 0, 0, [1, 15], '零分页参数应使用默认值');
+assertQiniuPagination($adminController, -1, -1, [1, 15], '负数分页参数应使用默认值');
+assertQiniuPagination($adminController, 'invalid', [], [1, 15], '错误类型分页参数应使用默认值');
+assertQiniuPagination($adminController, 1, 101, [1, 100], '每页记录数应限制为 100');
 
 assertResponseMessage(
     callUploadConfig($app, []),
@@ -100,6 +108,26 @@ assertResponseMessage(
 );
 
 echo "qiniu PHP 8.3 input compatibility tests passed\n";
+
+/**
+ * 断言七牛分页参数归一化结果
+ *
+ * @param Admin $controller 七牛后台控制器
+ * @param mixed $page 原始页码
+ * @param mixed $limit 原始每页记录数
+ * @param array $expected 预期分页参数
+ * @param string $message 错误信息
+ * @return void
+ */
+function assertQiniuPagination(Admin $controller, $page, $limit, array $expected, string $message): void
+{
+    $method = new ReflectionMethod(Admin::class, 'normalizePagination');
+    $method->setAccessible(true);
+    $actual = $method->invoke($controller, $page, $limit);
+    if ($actual !== $expected) {
+        throw new RuntimeException($message . ' actual=' . var_export($actual, true));
+    }
+}
 
 /**
  * 调用上传配置接口

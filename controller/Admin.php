@@ -12,6 +12,9 @@ use app\qiniu\service\QiniuService;
 
 class Admin extends AdminController
 {
+    /** 单页最大记录数 */
+    const MAX_LIMIT = 100;
+
     /**
      * 上传文件列表
      */
@@ -19,8 +22,7 @@ class Admin extends AdminController
     {
         $action = input('_action');
         if ($action == 'getList') {
-            $page = input('page', 1);
-            $limit = input('limit', 15);
+            list($page, $limit) = $this->normalizePagination(input('page', 1), input('limit', 15));
             $datetime = input('datetime', '');
             $file_name = input('file_name', '');
             $file_status = input('file_status', '');
@@ -78,8 +80,7 @@ class Admin extends AdminController
     {
         $action = input('_action');
         if ($action == 'getList') {
-            $page = input('page', 1);
-            $limit = input('limit', 15);
+            list($page, $limit) = $this->normalizePagination(input('page', 1), input('limit', 15));
             $datetime = input('datetime', '');
             $file_name = input('file_name', '');
             $sort_field = input('sort_field', '');
@@ -132,5 +133,47 @@ class Admin extends AdminController
             return json($res);
         }
         return view('fetch_files');
+    }
+
+    /**
+     * 归一化分页参数
+     *
+     * 页码和每页记录数仅接受整数或去除首尾空格后的整数格式字符串
+     * 0、负数、非数字字符串、数组及其他类型分别回退为 1 和 15
+     * 每页记录数超过 100 时限制为 100
+     *
+     * @param mixed $page 原始页码
+     * @param mixed $limit 原始每页记录数
+     * @return array
+     */
+    private function normalizePagination($page, $limit)
+    {
+        $page = $this->normalizePositiveInteger($page, 1);
+        $limit = min($this->normalizePositiveInteger($limit, 15), self::MAX_LIMIT);
+
+        return [$page, $limit];
+    }
+
+    /**
+     * 归一化正整数
+     *
+     * 接受整数或去除首尾空格后的整数格式字符串且结果必须大于 0
+     * 浮点数、布尔值、null、数组、对象及非整数格式字符串均返回默认值
+     *
+     * @param mixed $value 原始值
+     * @param int $default 默认值
+     * @return int
+     */
+    private function normalizePositiveInteger($value, $default)
+    {
+        if (is_int($value)) {
+            $number = $value;
+        } elseif (is_string($value) && preg_match('/^[+-]?\d+$/D', trim($value)) === 1) {
+            $number = (int) trim($value);
+        } else {
+            return $default;
+        }
+
+        return $number > 0 ? $number : $default;
     }
 }
