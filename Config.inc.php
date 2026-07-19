@@ -16,7 +16,7 @@ return [
     //作者邮箱
     'authoremail' => 'tonjayin@gmail.com',
     //版本号，请不要带除数字外的其他字符
-    'version'     => '1.0.4',
+    'version'     => '1.0.5',
     //适配最低CMS版本，
     'adaptation'  => '4.0.0',
     //依赖模块
