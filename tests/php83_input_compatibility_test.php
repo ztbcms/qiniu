@@ -30,7 +30,7 @@ assertResponseMessage(
 );
 $encodedFileNameResponse = callUploadConfig($app, ['file_name' => 'test%2Epdf']);
 if (($encodedFileNameResponse['status'] ?? false) !== true
-    || !str_ends_with((string)($encodedFileNameResponse['data']['key'] ?? ''), '.pdf')) {
+    || substr((string)($encodedFileNameResponse['data']['key'] ?? ''), -4) !== '.pdf') {
     throw new RuntimeException('上传配置应正确解码合法文件名 response=' . var_export($encodedFileNameResponse, true));
 }
 assertResponseMessage(
@@ -107,7 +107,7 @@ assertResponseMessage(
     '拉取接口 url 为数组时应返回参数错误'
 );
 
-echo "qiniu PHP 8.3 input compatibility tests passed\n";
+echo "qiniu input compatibility tests passed\n";
 
 /**
  * 断言七牛分页参数归一化结果
