@@ -22,7 +22,11 @@ class Upload extends BaseApi
      */
     function getUploadConfig(Request $request)
     {
-        $file_name = urldecode(input('file_name'));
+        $file_name = input('file_name', '');
+        if (!is_string($file_name)) {
+            return self::makeJsonReturn(false, null, '参数异常');
+        }
+        $file_name = urldecode($file_name);
         if (empty($file_name)) {
             return self::makeJsonReturn(false, null, '参数异常');
         }
@@ -66,13 +70,22 @@ class Upload extends BaseApi
         $fname = input('fname');
         $mimeType = input('mimeType');
         $fsize = input('fsize');
-        $file_ext = ltrim(input('ext'), '.');
+        // 允许空扩展名（无后缀文件）；仅拦截非 string，避免 PHP 8.3 下 null/数组进入 ltrim
+        $file_ext = input('ext', '');
+        if (!is_string($file_ext)) {
+            return self::makeJsonReturn(false, null, '参数异常:ext');
+        }
+        $file_ext = ltrim($file_ext, '.');
         $uid = input('uid', '');
         if (empty($key) || empty($fname) || empty($mimeType) || empty($fsize)) {
             return self::makeJsonReturn(false, null, '参数异常');
         }
         // 如有自定义文件名,则优先使用自定义
-        $file_name = urldecode(input('custom_file_name'));
+        $file_name = input('custom_file_name', '');
+        if (!is_string($file_name)) {
+            return self::makeJsonReturn(false, null, '参数异常:custom_file_name');
+        }
+        $file_name = urldecode($file_name);
         if (!empty($file_name)) {
             $fname = $file_name;
         }

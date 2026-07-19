@@ -25,7 +25,14 @@ class Fetch extends BaseApi
      */
     function createFetch()
     {
-        $url = urldecode(input('url'));
+        $url = input('url', '');
+        if (!is_string($url)) {
+            return self::makeJsonReturn(false, null, '参数异常:url');
+        }
+        $url = urldecode($url);
+        if (empty($url)) {
+            return self::makeJsonReturn(false, null, '参数异常:url');
+        }
         $service = new QiniuService();
         $res = $service->createFetch($url);
         if (!$res) {
