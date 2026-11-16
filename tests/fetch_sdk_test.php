@@ -80,7 +80,9 @@ function sdkAssert(bool $condition, string $message): void
 $service = new SdkFetchServiceTest();
 $sdk = $service->sdk = new RecordingFetchSdk();
 $submit = new \ReflectionMethod($service, 'submitFetch');
+$submit->setAccessible(true);
 $query = new \ReflectionMethod($service, 'queryFetchTask');
+$query->setAccessible(true);
 $result = $submit->invoke($service, 'bucket', 'key.doc', 'https://source.example/a.doc', 'https://api.example/callback?token=secret');
 sdkAssert($result['status'] && $result['data']['id'] === 'task-id', 'SDK submit result preserved');
 sdkAssert($sdk->arguments[0] === 'https://source.example/a.doc' && $sdk->arguments[1] === 'bucket'

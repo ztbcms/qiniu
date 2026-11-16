@@ -11,6 +11,7 @@ think\facade\Db::execute("CREATE TABLE qiniu_fetch_file (
  id INTEGER PRIMARY KEY AUTOINCREMENT, uuid TEXT, bucket TEXT, key TEXT,
  file_name TEXT, file_ext TEXT, file_url TEXT, fetch_url TEXT,
  fetch_status INTEGER DEFAULT 0, file_type TEXT DEFAULT '', file_size INTEGER DEFAULT 0,
+ download_amount INTEGER DEFAULT 0, view_amount INTEGER DEFAULT 0, file_status INTEGER DEFAULT 0,
  fetch_task_id TEXT DEFAULT '', fetch_wait INTEGER DEFAULT 0, fetch_error TEXT DEFAULT '',
  submitted_at INTEGER DEFAULT 0, callback_hash TEXT DEFAULT '', create_time INTEGER, update_time INTEGER
 )");
@@ -59,6 +60,7 @@ $q = new FakeFetchService();
 $r = $q->createFetch('https://source.example.com/a.doc', 'a.doc', 'a.doc', 'doc');
 $id = $r['data']['id'];
 $m = app\qiniu\model\QiniuFetchFileModel::find($id);
+verifyFetch($m->file_type === '' && (int)$m->file_size === 0 && (int)$m->download_amount === 0 && (int)$m->view_amount === 0 && (int)$m->file_status === 0, 'persist default values on initial create');
 verifyFetch($m->fetch_task_id === 'task-1', 'persist cloud task id');
 $r = $q->checkFetch($m);
 verifyFetch($r['data']['status'] === 0, 'wait=-1 must remain pending');

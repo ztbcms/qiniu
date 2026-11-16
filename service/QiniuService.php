@@ -311,10 +311,15 @@ class QiniuService extends BaseService
                 'key' => $key,
                 'uuid' => $uuid,
                 'file_name' => $file_name,
+                'file_type' => '',
                 'file_ext' => $file_ext,
+                'file_size' => 0,
                 'file_url' => $this->getConfig('fetch')['domain'] . '/' . $key,
                 'fetch_url' => $url,
                 'fetch_status' => QiniuFetchFileModel::FETCH_STATUS_DOING,
+                'download_amount' => 0,
+                'view_amount' => 0,
+                'file_status' => 0,
             ]);
         }
         $callback = trim((string)($this->getConfig('fetch')['callback_url'] ?? ''));

@@ -115,6 +115,9 @@ class Upload extends BaseApi
                 'file_url' => $config['upload']['domain'] . '/' . $key,
                 'create_time' => time(),
                 'uid' => $uid,
+                'download_amount' => 0,
+                'view_amount' => 0,
+                'file_status' => 0,
             ];
             // 记录上传信息
             $exist = QiniuUploadFileModel::where([
